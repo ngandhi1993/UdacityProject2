@@ -4,8 +4,7 @@
 #
 
 import psycopg2
-
-
+from ast import literal_eval as make_tuple
 def connect():
     """Connect to the PostgreSQL database.  Returns a database connection."""
     return psycopg2.connect("dbname=tournament")
@@ -34,7 +33,8 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
-    query = 'INSERT INTO Players (PlayerName) VALUES (\'{0}\');'.format(name)
+    name = name.replace('\'', '\\\'')
+    query = 'INSERT INTO Players (PlayerName) VALUES (E\'{0}\');'.format(name)
     c.execute(query)
 
 def playerStandings():
@@ -50,9 +50,15 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
-    c.execute('Select (PlayerID, PlayerName, GamesWon, GamesPlayed) From Players')
-    results = c.fetchall()
-    return results
+    tuples = []
+    c.execute('Select (PlayerID, PlayerName, GamesWon, GamesPlayed) From Players ORDER BY GamesWon DESC')
+    fetchall = c.fetchall()
+    results = [element for (element,) in fetchall]
+    for result in results:
+        row = result[1:-1].split(',')
+        tuple = (int(row[0]), str(row[1][1:-1]), int(row[2]), int(row[3]))
+        tuples.append(tuple)
+    return tuples
 
 def reportMatch(winner, loser):
     """Records the outcome of a single match between two players.
@@ -61,7 +67,10 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
-
+    query1 = 'UPDATE Players SET GamesWon = GamesWon + 1, GamesPlayed = GamesPlayed + 1 WHERE PlayerId = {0};'.format(winner)
+    query2 = 'UPDATE Players SET GamesPlayed = GamesPlayed + 1 WHERE PlayerId = {0};'.format(loser)
+    c.execute(query1)
+    c.execute(query2)
 
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
