@@ -87,6 +87,15 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+    numPlayers = countPlayers()
+    pairings = []
+    if numPlayers % 2 == 0:
+        standings = playerStandings()
+        for i, player in enumerate(standings):
+            if i % 2 == 0:
+                pairing = (player[0], player[1],standings[i + 1][0], standings[i + 1][1])
+                pairings.append(pairing)
+    return pairings
 
 def closeDatabaseConnection():
     c.close()
