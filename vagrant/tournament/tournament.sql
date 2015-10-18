@@ -13,7 +13,7 @@ CREATE TABLE Players(
   PlayerName VARCHAR(255),
   GamesPlayed INT DEFAULT 0,
   GamesWon INT DEFAULT 0,
-  PlayedNoPlayRound BOOLEAN DEFAULT FALSE
+  PlayedByeRound BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE Matches(

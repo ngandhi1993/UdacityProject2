@@ -70,7 +70,6 @@ def testStandingsBeforeMatches():
     if len(standings[0]) != 4:
         raise ValueError("Each playerStandings row should have four columns.")
     [(id1, name1, wins1, matches1), (id2, name2, wins2, matches2)] = standings
-    print standings
     if matches1 != 0 or matches2 != 0 or wins1 != 0 or wins2 != 0:
         raise ValueError(
             "Newly registered players should have no matches or wins.")
@@ -125,6 +124,28 @@ def testPairings():
             "After one match, players with one win should be paired.")
     print "8. After one match, players with one win are paired."
 
+def testOddNumberOfPlayers():
+    deleteMatches()
+    deletePlayers()
+    registerPlayer("Twilight Sparkle")
+    registerPlayer("Fluttershy")
+    registerPlayer("Applejack")
+    registerPlayer("Pinkie Pie")
+    registerPlayer("Iron Man")
+    standings = playerStandings()
+    [id1, id2, id3, id4, id5] = [row[0] for row in standings]
+    #Fifth Player Plays Bye Round
+    setPlayedByeRound(id5)
+    #First Round
+    reportMatch(id1, id2)
+    reportMatch(id3, id4)
+    pairings = swissPairings()
+    [(pid1, pname1, pid2, pname2), (pid3, pname3, pid4, pname4)] = pairings
+    if not(pid1 == id5 or pid2 == id5 or pid3 == id5 or pid4 == id5):
+        raise ValueError("After one match, player with id1 should play Bye Round")
+    print "9. In a tournament containing odd number of players, player who has played \
+            one 'bye' round does not play one again."
+
 
 if __name__ == '__main__':
     testDeleteMatches()
@@ -135,4 +156,5 @@ if __name__ == '__main__':
     testStandingsBeforeMatches()
     testReportMatches()
     testPairings()
+    testOddNumberOfPlayers()
     print "Success!  All tests pass!"

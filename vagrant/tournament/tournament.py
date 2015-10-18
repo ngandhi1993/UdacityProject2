@@ -33,9 +33,9 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
-    name = name.replace('\'', '\\\'')
-    query = 'INSERT INTO Players (PlayerName) VALUES (E\'{0}\');'.format(name)
-    c.execute(query)
+    query = 'INSERT INTO Players (PlayerName) VALUES (%s);'
+    params = (name, )
+    c.execute(query, params)
 
 def playerStandings():
     """Returns a list of the players and their win records, sorted by wins.
@@ -56,10 +56,23 @@ def playerStandings():
     results = [element for (element,) in fetchall]
     for result in results:
         row = result[1:-1].split(',')
-        tuple = (int(row[0]), str(row[1][1:-1]), int(row[2]), int(row[3]))
+        tuple = (int(row[0]), returnName(str(row[1])), int(row[2]), int(row[3]))
         tuples.append(tuple)
     return tuples
 
+def returnName(name):
+    """Rectifies discrepancies in the name returned by P-SQL
+
+    Args:
+        name: the player's full name with or without double quotes
+
+    Returns:
+        Player's full name excluding the quotes
+    """
+    if name[0] == '\"':
+        return name[1:-1]
+    else:
+        return name
 def reportMatch(winner, loser):
     """Records the outcome of a single match between two players.
 
@@ -67,10 +80,38 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
-    query1 = 'UPDATE Players SET GamesWon = GamesWon + 1, GamesPlayed = GamesPlayed + 1 WHERE PlayerId = {0};'.format(winner)
-    query2 = 'UPDATE Players SET GamesPlayed = GamesPlayed + 1 WHERE PlayerId = {0};'.format(loser)
-    c.execute(query1)
-    c.execute(query2)
+    query1 = 'UPDATE Players SET GamesWon = GamesWon + 1, GamesPlayed = GamesPlayed + 1 WHERE PlayerId = %s;'
+    params1 = (winner,)
+    query2 = 'UPDATE Players SET GamesPlayed = GamesPlayed + 1 WHERE PlayerId = %s;'
+    params2 = (loser,)
+    c.execute(query1, params1)
+    c.execute(query2, params2)
+
+def findPlayerToSkip():
+    """Finds the player who can play the bye round.
+
+    After finding the player, set 'PlayedByeRound' to false.
+
+    Returns:
+        PlayerID who can play the bye round.
+    """
+    query = 'Select (PlayedByeRound, PlayerID) From Players'
+    c.execute(query)
+    fetchall = c.fetchall()
+    for wrappedValue in fetchall:
+        value = wrappedValue[0][1:-1].split(',')
+        if value[0] == 'f':
+            setPlayedByeRound(value[1])
+            return value[1]
+
+def setPlayedByeRound(playerID):
+    """Sets the 'PlayedByeRound' property of player with ID as PlayerID
+    Args:
+        playerID: ID of the player whose property needs to be set
+    """
+    query = 'UPDATE Players SET PlayedByeRound = TRUE WHERE PlayerId = %s'
+    params = (playerID, )
+    c.execute(query, params)
 
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
@@ -89,17 +130,30 @@ def swissPairings():
     """
     numPlayers = countPlayers()
     pairings = []
-    if numPlayers % 2 == 0:
-        standings = playerStandings()
-        for i, player in enumerate(standings):
-            if i % 2 == 0:
-                pairing = (player[0], player[1],standings[i + 1][0], standings[i + 1][1])
-                pairings.append(pairing)
+    i = 0
+    playerToSkip = -1
+    if numPlayers % 2 == 1:
+        #Select a player who skips round
+        playerToSkip = findPlayerToSkip()
+    standings = playerStandings()
+    while i < len(standings):
+        if int(standings[i][0]) == int(playerToSkip):
+            #Do not include Player i in pairing
+            i = i + 1
+        j = i + 1
+        if int(standings[j][0]) == int(playerToSkip):
+            #Do not include Player j in pairing
+            j = j + 1
+        pairing = (standings[i][0], standings[i][1], standings[j][0], standings[j][1])
+        pairings.append(pairing)
+        #Skip every other player as it is already included in the previous tuple
+        i = j + 1
     return pairings
 
 def closeDatabaseConnection():
     c.close()
     conn.close()
 
+#Connect to server and get the cursor
 conn = connect()
 c = conn.cursor()
