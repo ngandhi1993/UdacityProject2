@@ -20,5 +20,6 @@ CREATE TABLE Matches(
   PlayerA INT REFERENCES Players(PlayerID),
   PlayerB INT REFERENCES Players(PlayerID),
   Winner INT REFERENCES Players(PlayerID),
-  PRIMARY KEY(PlayerA, PlayerB)
+  PRIMARY KEY(PlayerA, PlayerB),
+  CHECK(PlayerA <> PlayerB)
 );

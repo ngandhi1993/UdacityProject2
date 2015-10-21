@@ -143,8 +143,8 @@ def testOddNumberOfPlayers():
     [(pid1, pname1, pid2, pname2), (pid3, pname3, pid4, pname4)] = pairings
     if not(pid1 == id5 or pid2 == id5 or pid3 == id5 or pid4 == id5):
         raise ValueError("After one match, player with id1 should play Bye Round")
-    print "9. In a tournament containing odd number of players, player who has played \
-            one 'bye' round does not play one again."
+    print "9. In a tournament containing odd number of players, player who has played "\
+            "one 'bye' round does not play one again."
 
 
 if __name__ == '__main__':
